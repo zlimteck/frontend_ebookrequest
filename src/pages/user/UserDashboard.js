@@ -48,20 +48,32 @@ const UserDashboard = () => {
     }
   };
   
-  // Marquer une notification comme vue côté serveur
+  // Fonction conservée pour d'autres usages mais pas utilisée pour les téléchargements
   const markNotificationAsSeen = async (requestId) => {
+    // Ne rien faire pour les téléchargements
+    return true;
+  };
+
+  // Marquer une demande comme téléchargée
+  const markAsDownloaded = async (requestId) => {
     try {
-      await axiosAdmin.post(`/api/notifications/${requestId}/seen`, { type: 'completed' });
-      setSeenNotifications(prev => {
-        const updated = new Set(prev);
-        updated.add(requestId);
-        return updated;
-      });
-      return true;
+      const response = await axiosAdmin.put(`/api/requests/${requestId}/mark-downloaded`);
+      if (response.data.success) {
+        // Mettre à jour l'état local
+        setRequests(prevRequests => 
+          prevRequests.map(req => 
+            req._id === requestId 
+              ? { ...req, downloadedAt: response.data.downloadedAt }
+              : req
+          )
+        );
+        return true;
+      }
     } catch (error) {
-      console.error('Erreur lors du marquage de la notification comme vue:', error);
-      return false;
+      console.error('Erreur lors du marquage comme téléchargé:', error);
+      toast.error('Erreur lors de l\'enregistrement du téléchargement');
     }
+    return false;
   };
   
   // Charger les notifications non vues au montage du composant
@@ -122,10 +134,17 @@ const UserDashboard = () => {
                 href={request.downloadLink} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                style={{ color: '#fff', textDecoration: 'underline' }}
-                onClick={(e) => e.stopPropagation()}
+                className={styles.downloadLink}
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  if (!request.downloadedAt) {
+                    await markAsDownloaded(request._id);
+                  }
+                }}
               >
-                Télécharger le livre
+                {request.downloadedAt 
+                  ? `Téléchargé le ${new Date(request.downloadedAt).toLocaleDateString()}` 
+                  : 'Télécharger'}
               </a>
             </div>,
             {
@@ -148,9 +167,9 @@ const UserDashboard = () => {
     prevRequestsRef.current = JSON.parse(JSON.stringify(requests));
   }, [requests]);
 
-  // Vérifier les mises à jour toutes les 30 secondes
+  // Vérifier les mises à jour toutes les 60 secondes
   useEffect(() => {
-    const intervalId = setInterval(fetchRequests, 30000);
+    const intervalId = setInterval(fetchRequests, 60000);
     return () => clearInterval(intervalId);
   }, [filter]);
 
@@ -292,7 +311,14 @@ const UserDashboard = () => {
                       className={styles.primaryButton}
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={() => markNotificationAsSeen(request._id)}
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        const marked = await markAsDownloaded(request._id);
+                        if (marked) {
+                          // Ouvrir le téléchargement après la mise à jour
+                          window.open(request.downloadLink, '_blank');
+                        }
+                      }}
                     >
                       Télécharger le livre
                     </a>
@@ -309,6 +335,16 @@ const UserDashboard = () => {
                       month: '2-digit',
                       year: 'numeric',
                     })}
+                    {request.downloadedAt && (
+                      <span style={{ marginLeft: '10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                          <polyline points="7 10 12 15 17 10"></polyline>
+                          <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        {new Date(request.downloadedAt).toLocaleDateString('fr-FR')}
+                      </span>
+                    )}
                   </span>
                 </div>
               </div>

@@ -209,17 +209,24 @@ function AdminPage() {
                   </div>
                 </div>
                 <div className={styles.requestMeta}>
-                  <div className={styles.requestUser}>
-                    <span className={styles.metaLabel}>Utilisateur :</span>
-                    <span>{request.username}</span>
-                  </div>
+                    <div className={styles.requestUser}>
+                      <span className={styles.metaLabel}>Utilisateur :</span>
+                      <span>{request.username}</span>
+                    </div>
                   <div className={styles.requestDate}>
                     <span className={styles.metaLabel}>Date :</span>
                     <span>{new Date(request.createdAt).toLocaleDateString()}</span>
                   </div>
-                  {request.link && (
+                    <div className={styles.requestDownloaded}>
+                      <span className={styles.metaLabel}>Téléchargé :</span>
+                      <span>{request.downloadedAt 
+                        ? new Date(request.downloadedAt).toLocaleDateString() 
+                        : 'Non'}
+                      </span>
+                    </div>
+                    {request.link && (
                     <div className={styles.requestLink}>
-                      <span className={styles.metaLabel}>Lien :</span>
+                    <span className={styles.metaLabel}>Lien :</span>
                       <a 
                         href={request.link} 
                         target="_blank" 
@@ -246,7 +253,24 @@ function AdminPage() {
                         target="_blank" 
                         rel="noopener noreferrer"
                         className={styles.downloadLink}
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (!request.downloadedAt) {
+                            try {
+                              await axiosAdmin.put(`/api/requests/${request._id}/mark-downloaded`);
+                              // Mettre à jour l'état local
+                              setRequests(prev => 
+                                prev.map(req => 
+                                  req._id === request._id 
+                                    ? { ...req, downloadedAt: new Date().toISOString() }
+                                    : req
+                                )
+                              );
+                            } catch (error) {
+                              console.error('Erreur lors du marquage comme téléchargé:', error);
+                            }
+                          }
+                        }}
                       >
                         Télécharger le livre
                       </a>

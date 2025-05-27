@@ -173,6 +173,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 650px; /* Hauteur minimale pour assurer la cohérence */
 }
 
 .requestCard:hover {
@@ -186,6 +187,8 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .bookInfo {
@@ -195,10 +198,15 @@ body {
   margin-bottom: 1rem;
   width: 100%;
   align-items: stretch;
+  min-height: 450px; /* Hauteur minimale pour la zone d'information */
 }
 
 .thumbnailContainer {
   height: 300px;
+  min-height: 300px;
+  width: 100%;
+  max-width: 200px; /* Largeur maximale pour correspondre aux miniatures Google Books */
+  margin: 0 auto 1.5rem; /* Centrer le conteneur */
   background: linear-gradient(135deg, var(--color-bg4), var(--color-bg3));
   display: flex;
   align-items: center;
@@ -211,7 +219,6 @@ body {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
   border: 1px solid rgba(255, 255, 255, 0.05);
-  margin-bottom: 1.5rem;
 }
 
 .thumbnailContainer::before {
@@ -265,13 +272,6 @@ body {
   color: var(--color-text-muted);
 }
 
-.noCoverContent span {
-  font-size: 0.95rem;
-  font-weight: 500;
-  margin-bottom: 0.25rem;
-  color: var(--color-text-muted);
-}
-
 .noCoverContent small {
   font-size: 0.8rem;
   opacity: 0.8;
@@ -312,33 +312,116 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--color-bg3);
-  border-radius: 4px;
-  color: var(--color-text-muted);
-  padding: 0.5rem;
-  text-align: center;
-  font-size: 0.7rem;
-  line-height: 1.2;
+  padding: 1rem;
+  box-sizing: border-box;
 }
 
 .noCoverIcon {
-  width: 20px;
-  height: 20px;
-  margin-bottom: 0.25rem;
-  opacity: 0.7;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+  color: var(--color-text-muted);
 }
 
-@media (max-width: 1200px) {
+/* Desktop (1200px et plus) */
+.thumbnailContainer {
+  height: 300px;
+  min-height: 300px;
+  width: 100%;
+  max-width: 200px;
+  margin: 0 auto 1.5rem;
+  background: linear-gradient(135deg, var(--color-bg4), var(--color-bg3));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Grands écrans (1600px et plus) */
+@media (min-width: 1600px) {
   .thumbnailContainer {
-    height: 260px;
+    height: 320px;
+    max-width: 220px;
   }
 }
 
-@media (max-width: 1200px) {
+/* Tablette paysage (1024px - 1199px) */
+@media (max-width: 1199px) and (min-width: 1024px) {
   .thumbnailContainer {
-    height: 260px;
+    height: 280px;
+    max-width: 190px;
+    padding: 1.25rem;
   }
   
+  .noCoverIcon {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+}
+
+/* Tablette (768px - 1023px) */
+@media (max-width: 1023px) and (min-width: 768px) {
+  .thumbnailContainer {
+    height: 260px;
+    max-width: 180px;
+    padding: 1.25rem;
+  }
+  
+  .noCoverIcon {
+    width: 2rem;
+    height: 2rem;
+  }
+}
+
+/* Mobile (480px - 767px) */
+@media (max-width: 767px) and (min-width: 480px) {
+  .thumbnailContainer {
+    height: 240px;
+    max-width: 160px;
+    padding: 1rem;
+    margin: 0 auto 1.25rem;
+  }
+  
+  .noCoverIcon {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+  
+  .noCoverContent span {
+    font-size: 0.9rem;
+  }
+}
+
+/* Petit mobile (moins de 480px) */
+@media (max-width: 479px) {
+  .thumbnailContainer {
+    height: 220px;
+    max-width: 140px;
+    padding: 0.75rem;
+    margin: 0 auto 1rem;
+  }
+  
+  .noCoverIcon {
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .noCoverContent span {
+    font-size: 0.8rem;
+  }
+}
+
+/* Ajustements pour les cartes de demande */
+@media (max-width: 768px) {
   .cardHeader {
     padding: 1rem;
   }
@@ -347,14 +430,8 @@ body {
     padding: 0.75rem;
   }
   
-  .noCoverIcon {
-    width: 1.75rem;
-    height: 1.75rem;
-    margin-bottom: 0.5rem;
-  }
-  
   .noCoverContent span {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
   }
 }
 
@@ -431,20 +508,66 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  margin-top: auto; /* Pousse le contenu vers le bas */
+  padding-top: 1rem;
   font-size: 0.9rem;
+  color: var(--color-text-muted);
+  min-height: 180px; /* Hauteur minimale pour la section meta */
+}
+
+.requestMeta span:not(.metaLabel) {
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.requestDownloaded {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.requestDownloaded .metaLabel {
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.requestDownloaded span:not(.metaLabel) {
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.requestDownloaded .downloaded {
+  color: var(--color-success);
+}
+
+.requestDownloaded .not-downloaded {
+  color: var(--color-danger);
 }
 
 .requestUser,
 .requestDate,
-.requestLink {
+.requestLink,
+.requestDownloaded {
   display: flex;
   gap: 0.5rem;
   align-items: center;
 }
 
 .requestLink {
-  flex-wrap: wrap;
-  margin-top: 0.25rem;
+  flex-wrap: nowrap;
+  margin-top: 0;
+  align-items: center;
+}
+
+.metaLabel {
+  white-space: nowrap;
+  display: inline-block;
+  text-align: right;
+}
+
+.requestLink .link {
+  display: flex;
+  align-items: center;
 }
 
 .requestLink .link {
@@ -620,7 +743,13 @@ body {
   box-sizing: border-box;
 }
 
+
+
 @media (max-width: 768px) {
+  .noCoverContent {
+    padding: 1rem;
+    min-height: 220px; /* Ajustement pour mobile */
+  }
   .tabContent {
     padding: 1rem;
     margin-left: 0;
@@ -667,6 +796,32 @@ body {
   color: var(--color-text-muted);
   font-size: 0.9rem;
   margin: 0;
+}
+
+.bookTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: var(--color-text);
+  min-height: 3em; /* Hauteur fixe pour le titre sur deux lignes */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.5;
+  line-clamp: 2; /* Version standard pour la compatibilité */
+  display: -webkit-box; /* Nécessaire pour line-clamp */
+}
+
+.bookAuthor {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  margin-bottom: 1rem;
+  min-height: 1.5em; /* Hauteur fixe pour l'auteur */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .button.danger {
