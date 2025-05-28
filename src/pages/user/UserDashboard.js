@@ -48,10 +48,26 @@ const UserDashboard = () => {
     }
   };
   
-  // Fonction conservée pour d'autres usages mais pas utilisée pour les téléchargements
+  // Marquer une notification comme vue côté serveur
   const markNotificationAsSeen = async (requestId) => {
-    // Ne rien faire pour les téléchargements
-    return true;
+    try {
+      // Envoyer la requête au serveur pour marquer la notification comme vue
+      await axiosAdmin.post(`/api/notifications/${requestId}/seen`, { 
+        type: 'completed' 
+      });
+      
+      // Mettre à jour l'état local des notifications vues
+      setSeenNotifications(prev => {
+        const updated = new Set(prev);
+        updated.add(requestId);
+        return updated;
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Erreur lors du marquage de la notification comme vue:', error);
+      return false;
+    }
   };
 
   // Marquer une demande comme téléchargée
@@ -115,8 +131,8 @@ const UserDashboard = () => {
             request.downloadLink && 
             !toastIdsRef.current.has(request._id) &&
             !seenNotifications.has(request._id) &&
-            (!request.notifications?.completed?.seen)) {// Ne pas afficher si déjà vue côté serveur
-          console.log('Nouvelle demande terminée détectée!', request);
+            (!request.notifications?.completed?.seen)) {
+          //console.log('Nouvelle demande terminée détectée!', request);
           toastIdsRef.current.add(request._id);
           const toastId = `completed-${request._id}`;
           (async () => {
