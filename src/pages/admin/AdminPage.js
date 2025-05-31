@@ -43,6 +43,8 @@ const ClockIcon = () => (
 
 function AdminPage() {
   const [activeTab, setActiveTab] = useState('requests');
+  const [showPushoverConfig, setShowPushoverConfig] = useState(false);
+  const [pushoverConfig, setPushoverConfig] = useState(null);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('pending');
@@ -50,6 +52,8 @@ function AdminPage() {
   const [deletingRequest, setDeletingRequest] = useState(null);
   const [editingDownloadLink, setEditingDownloadLink] = useState(null);
   const [downloadLink, setDownloadLink] = useState('');
+  const [cancelingRequest, setCancelingRequest] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
 
   const fetchRequests = async () => {
     try {
@@ -70,18 +74,33 @@ function AdminPage() {
     }
   }, [filter, activeTab]);
 
-  const handleUpdateStatus = async (id, status) => {
+  const handleUpdateStatus = async (id, status, reason = '') => {
     try {
       setUpdatingStatus(id);
-      await axiosAdmin.patch(`/api/requests/${id}/status`, { status });
+      await axiosAdmin.patch(`/api/requests/${id}/status`, { status, reason });
       await fetchRequests();
-      toast.success(`Demande marquée comme ${status === 'completed' ? 'complétée' : 'en attente'}`);
+      const statusMessages = {
+        'completed': 'complétée',
+        'canceled': 'annulée',
+        'pending': 'en attente'
+      };
+      toast.success(`Demande marquée comme ${statusMessages[status] || status}`);
+      setCancelingRequest(null);
+      setCancelReason('');
     } catch (error) {
       console.error('Erreur lors de la mise à jour du statut:', error);
       toast.error('Erreur lors de la mise à jour du statut');
     } finally {
       setUpdatingStatus(null);
     }
+  };
+
+  const handleCancelRequest = (id) => {
+    if (cancelReason.trim() === '') {
+      toast.error('Veuillez indiquer une raison d\'annulation');
+      return;
+    }
+    handleUpdateStatus(id, 'canceled', cancelReason);
   };
 
   const handleDeleteRequest = async (id) => {
@@ -102,10 +121,13 @@ function AdminPage() {
 
   const handleSaveDownloadLink = async (id, link) => {
     try {
+      // Mettre à jour le lien de téléchargement
       await axiosAdmin.patch(`/api/requests/${id}/download-link`, { downloadLink: link });
+      // Mettre à jour le statut à 'completed' après l'ajout du lien
+      await handleUpdateStatus(id, 'completed');
       setEditingDownloadLink(null);
       await fetchRequests();
-      toast.success('Lien de téléchargement enregistré');
+      toast.success('Lien de téléchargement enregistré et demande marquée comme complétée');
     } catch (error) {
       console.error('Erreur lors de la sauvegarde du lien:', error);
       toast.error('Erreur lors de la sauvegarde du lien');
@@ -137,6 +159,12 @@ function AdminPage() {
                 onClick={() => setFilter('completed')}
               >
                 Complétées
+              </button>
+              <button 
+                className={`${styles.filterButton} ${filter === 'canceled' ? styles.active : ''}`}
+                onClick={() => setFilter('canceled')}
+              >
+                Annulées
               </button>
               <button 
                 className={`${styles.filterButton} ${filter === 'all' ? styles.active : ''}`}
@@ -238,8 +266,17 @@ function AdminPage() {
                       </a>
                     </div>
                   )}
-                  <div className={`${styles.status} ${request.status === 'completed' ? styles.completed : ''}`}>
-                    {request.status === 'pending' ? 'En attente' : 'Complétée'}
+                  <div 
+                    className={`${styles.status} ${
+                      request.status === 'completed' ? styles.completed : 
+                      request.status === 'canceled' ? styles.canceled : ''
+                    }`}
+                  >
+                    {
+                      request.status === 'pending' ? 'En attente' :
+                      request.status === 'completed' ? 'Complétée' :
+                      request.cancelReason ? `Annulée : ${request.cancelReason}` : 'Annulée'
+                    }
                   </div>
                 </div>
               </div>
@@ -282,13 +319,6 @@ function AdminPage() {
                       <>
                         <button 
                           className={`${styles.button} ${styles.primary}`}
-                          onClick={() => handleUpdateStatus(request._id, 'completed')}
-                          disabled={updatingStatus === request._id}
-                        >
-                          {updatingStatus === request._id ? '...' : 'Marquer comme complété'}
-                        </button>
-                        <button 
-                          className={styles.button}
                           onClick={() => {
                             setEditingDownloadLink(request._id);
                             setDownloadLink(request.downloadLink || '');
@@ -296,15 +326,45 @@ function AdminPage() {
                         >
                           Ajouter un lien
                         </button>
+                        <button 
+                          className={`${styles.button} ${styles.secondary}`}
+                          onClick={() => setCancelingRequest(request._id)}
+                          disabled={updatingStatus === request._id}
+                        >
+                          Annuler
+                        </button>
                       </>
                     ) : (
-                      <button 
-                        className={styles.button}
-                        onClick={() => handleUpdateStatus(request._id, 'pending')}
-                        disabled={updatingStatus === request._id}
-                      >
-                        {updatingStatus === request._id ? '...' : 'Remettre en attente'}
-                      </button>
+                      <>
+                        <button 
+                          className={`${styles.button} ${styles.warning}`}
+                          onClick={() => handleUpdateStatus(request._id, 'pending')}
+                          disabled={updatingStatus === request._id}
+                        >
+                          {updatingStatus === request._id ? '...' : 'En attente'}
+                        </button>
+                        {request.status === 'completed' && (
+                          <button 
+                            className={`${styles.button} ${styles.secondary}`}
+                            onClick={() => {
+                              setCancelingRequest(request._id);
+                              setCancelReason('');
+                            }}
+                            disabled={updatingStatus === request._id}
+                          >
+                            {updatingStatus === request._id ? '...' : 'Annuler'}
+                          </button>
+                        )}
+                        {request.status === 'canceled' && (
+                          <button 
+                            className={`${styles.button} ${styles.primary}`}
+                            onClick={() => handleUpdateStatus(request._id, 'pending')}
+                            disabled={updatingStatus === request._id}
+                          >
+                            {updatingStatus === request._id ? '...' : 'Réactiver'}
+                          </button>
+                        )}
+                      </>
                     )}
                     <button 
                       className={`${styles.button} ${styles.danger}`}
@@ -314,6 +374,37 @@ function AdminPage() {
                       {deletingRequest === request._id ? '...' : 'Supprimer'}
                     </button>
                   </div>
+                  
+                  {cancelingRequest === request._id && (
+                    <div className={styles.cancelForm}>
+                      <input
+                        type="text"
+                        value={cancelReason}
+                        onChange={(e) => setCancelReason(e.target.value)}
+                        placeholder="Raison de l'annulation"
+                        className={styles.cancelInput}
+                        autoFocus
+                      />
+                      <div className={styles.cancelButtons}>
+                        <button 
+                          className={`${styles.button} ${styles.primary}`}
+                          onClick={() => handleCancelRequest(request._id)}
+                          disabled={updatingStatus === request._id}
+                        >
+                          {updatingStatus === request._id ? '...' : 'Confirmer'}
+                        </button>
+                        <button 
+                          className={styles.button}
+                          onClick={() => {
+                            setCancelingRequest(null);
+                            setCancelReason('');
+                          }}
+                        >
+                          Annuler
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   
                   {editingDownloadLink === request._id && (
                     <div className={styles.downloadLinkForm}>

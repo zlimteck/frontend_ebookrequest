@@ -33,11 +33,20 @@ const UserDashboard = () => {
       setLoading(true);
       const response = await axiosAdmin.get(`/api/requests/my-requests?status=${filter === 'all' ? '' : filter}`);
       
-      // Tri des demandes pour afficher les demandes terminées en premier
+      // Tri des demandes pour afficher les demandes terminées en premier, puis annulées, puis en attente
       const sortedRequests = [...response.data].sort((a, b) => {
-        if (a.status === 'completed' && b.status !== 'completed') return -1;
-        if (a.status !== 'completed' && b.status === 'completed') return 1;
-        return new Date(b.createdAt) - new Date(a.createdAt); 
+        const statusPriority = {
+          'completed': 1,
+          'canceled': 2,
+          'pending': 3
+        };
+        
+        const aPriority = statusPriority[a.status] || 3;
+        const bPriority = statusPriority[b.status] || 3;
+        
+        if (aPriority < bPriority) return -1;
+        if (aPriority > bPriority) return 1;
+        return new Date(b.createdAt) - new Date(a.createdAt);
       });
       setRequests(sortedRequests);
     } catch (error) {
@@ -49,11 +58,11 @@ const UserDashboard = () => {
   };
   
   // Marquer une notification comme vue côté serveur
-  const markNotificationAsSeen = async (requestId) => {
+  const markNotificationAsSeen = async (requestId, type = 'completed') => {
     try {
       // Envoyer la requête au serveur pour marquer la notification comme vue
       await axiosAdmin.post(`/api/notifications/${requestId}/seen`, { 
-        type: 'completed' 
+        type: type 
       });
       
       // Mettre à jour l'état local des notifications vues
@@ -127,22 +136,25 @@ const UserDashboard = () => {
       requests.forEach(request => {
         if (!request || !request._id) return;
         const prevRequest = prevRequestsRef.current.find(r => r && r._id === request._id);
+        // Gestion des notifications pour les demandes terminées
         if (request.status === 'completed' && 
             request.downloadLink && 
-            !toastIdsRef.current.has(request._id) &&
-            !seenNotifications.has(request._id) &&
+            !toastIdsRef.current.has(`completed-${request._id}`) &&
+            !seenNotifications.has(`completed-${request._id}`) &&
             (!request.notifications?.completed?.seen)) {
-          //console.log('Nouvelle demande terminée détectée!', request);
-          toastIdsRef.current.add(request._id);
+          
+          toastIdsRef.current.add(`completed-${request._id}`);
           const toastId = `completed-${request._id}`;
+          
           (async () => {
             try {
-              await markNotificationAsSeen(request._id);
-              setSeenNotifications(prev => new Set([...prev, request._id]));
+              await markNotificationAsSeen(request._id, 'completed');
+              setSeenNotifications(prev => new Set([...prev, `completed-${request._id}`]));
             } catch (error) {
               console.error('Erreur lors du marquage de la notification comme vue:', error);
             }
           })();
+          
           toast.success(
             <div>
               <div>Votre demande est terminée !</div>
@@ -165,7 +177,42 @@ const UserDashboard = () => {
             </div>,
             {
               toastId: toastId,
-              autoClose: 10000, // Fermer automatiquement après 10 secondes
+              autoClose: 10000,
+              closeOnClick: true,
+              closeButton: true
+            }
+          );
+        }
+        
+        // Gestion des notifications pour les demandes annulées
+        if (request.status === 'canceled' && 
+            request.cancelReason && 
+            !toastIdsRef.current.has(`canceled-${request._id}`) &&
+            !seenNotifications.has(`canceled-${request._id}`) &&
+            (!request.notifications?.canceled?.seen)) {
+          
+          toastIdsRef.current.add(`canceled-${request._id}`);
+          const toastId = `canceled-${request._id}`;
+          
+          (async () => {
+            try {
+              await markNotificationAsSeen(request._id, 'canceled');
+              setSeenNotifications(prev => new Set([...prev, `canceled-${request._id}`]));
+            } catch (error) {
+              console.error('Erreur lors du marquage de la notification comme vue:', error);
+            }
+          })();
+          
+          toast.error(
+            <div>
+              <div>Votre demande a été annulée</div>
+              <div className={styles.cancelReason}>
+                <strong>Raison :</strong> {request.cancelReason}
+              </div>
+            </div>,
+            {
+              toastId: toastId,
+              autoClose: 10000,
               closeOnClick: true,
               closeButton: true
             }
@@ -230,6 +277,12 @@ const UserDashboard = () => {
           En attente
         </button>
         <button
+          className={`${styles.filterButton} ${filter === 'canceled' ? styles.active : ''}`}
+          onClick={() => setFilter('canceled')}
+        >
+          Annulées
+        </button>
+        <button
           className={`${styles.filterButton} ${filter === 'completed' ? styles.active : ''}`}
           onClick={() => setFilter('completed')}
         >
@@ -244,7 +297,11 @@ const UserDashboard = () => {
       ) : (
         <div className={styles.requestsGrid}>
           {requests.map((request) => (
-            <div key={request._id} className={`${styles.requestCard} ${request.status === 'completed' ? styles.completed : ''}`}>
+            <div key={request._id} className={`${styles.requestCard} ${
+              request.status === 'completed' ? styles.completed :
+              request.status === 'canceled' ? styles.canceled :
+              ''
+            }`}>
               <div className={styles.bookCover}>
                 {request.thumbnail ? (
                   <img 
@@ -282,8 +339,16 @@ const UserDashboard = () => {
               <div className={styles.requestContent}>
                 <div className={styles.requestHeader}>
                   <h3 className={styles.requestTitle}>{request.title}</h3>
-                  <span className={`${styles.statusBadge} ${request.status === 'completed' ? styles.completedBadge : styles.pendingBadge}`}>
-                    {request.status === 'completed' ? 'Terminé' : 'En attente'}
+                  <span className={`${styles.statusBadge} ${
+                    request.status === 'completed' ? styles.completedBadge : 
+                    request.status === 'canceled' ? styles.canceledBadge : 
+                    styles.pendingBadge
+                  }`}>
+                    {
+                      request.status === 'completed' ? 'Terminée' :
+                      request.status === 'canceled' ? 'Annulée' :
+                      'En attente'
+                    }
                   </span>
                 </div>
                 <p className={styles.requestAuthor}>Par {request.author}</p>
@@ -319,6 +384,13 @@ const UserDashboard = () => {
                     >
                       Voir plus d'informations
                     </a>
+                  )}
+
+                  {request.status === 'canceled' && request.cancelReason && (
+                    <div className={styles.cancelReason}>
+                      <span className={styles.cancelReasonLabel}>Motif :</span>
+                      <p>{request.cancelReason}</p>
+                    </div>
                   )}
                   
                   {request.status === 'completed' && request.downloadLink && (
