@@ -4,6 +4,7 @@ import axiosAdmin from '../../axiosAdmin';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import styles from './UserDashboard.module.css';
+import { REACT_APP_API_URL } from '../../config';
 
 const ClockIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -26,6 +27,7 @@ const UserDashboard = () => {
   const prevRequestsRef = useRef([]);
   const isFirstRender = useRef(true);
   const [seenNotifications, setSeenNotifications] = useState(new Set());
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Récupère les demandes de l'utilisateur connecté
   const fetchRequests = async () => {
@@ -33,12 +35,12 @@ const UserDashboard = () => {
       setLoading(true);
       const response = await axiosAdmin.get(`/api/requests/my-requests?status=${filter === 'all' ? '' : filter}`);
       
-      // Tri des demandes pour afficher les demandes terminées en premier, puis annulées, puis en attente
+      // Tri des demandes pour afficher : Terminées, En attente, puis Annulées
       const sortedRequests = [...response.data].sort((a, b) => {
         const statusPriority = {
           'completed': 1,
-          'canceled': 2,
-          'pending': 3
+          'pending': 2,
+          'canceled': 3
         };
         
         const aPriority = statusPriority[a.status] || 3;
@@ -85,13 +87,32 @@ const UserDashboard = () => {
       const response = await axiosAdmin.put(`/api/requests/${requestId}/mark-downloaded`);
       if (response.data.success) {
         // Mettre à jour l'état local
-        setRequests(prevRequests => 
-          prevRequests.map(req => 
+        setRequests(prevRequests => {
+          const updatedRequests = prevRequests.map(req => 
             req._id === requestId 
               ? { ...req, downloadedAt: response.data.downloadedAt }
               : req
-          )
-        );
+          );
+          
+          // Trouver la demande mise à jour
+          const updatedRequest = updatedRequests.find(req => req._id === requestId);
+          if (updatedRequest && updatedRequest.status === 'completed') {
+            if (!toastIdsRef.current.has(`completed-${requestId}`)) {
+              toastIdsRef.current.add(`completed-${requestId}`);
+              // Marquer la notification comme vue côté serveur
+              (async () => {
+                try {
+                  await markNotificationAsSeen(requestId, 'completed');
+                  setSeenNotifications(prev => new Set([...prev, `completed-${requestId}`]));
+                } catch (error) {
+                  console.error('Erreur lors du marquage de la notification comme vue:', error);
+                }
+              })();
+            }
+          } 
+          return updatedRequests;
+        });
+        
         return true;
       }
     } catch (error) {
@@ -99,6 +120,64 @@ const UserDashboard = () => {
       toast.error('Erreur lors de l\'enregistrement du téléchargement');
     }
     return false;
+  };
+
+  // Télécharger un fichier
+  const downloadFile = async (request) => {
+    if (isDownloading) return;
+    
+    setIsDownloading(true);
+
+    try {
+      const marked = await markAsDownloaded(request._id);
+      if (marked) {
+        const response = await axiosAdmin.get(
+          `/api/requests/download/${request._id}`,
+          {
+            responseType: 'blob'
+          }
+        );
+
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        
+        // Extraire le nom du fichier depuis le header Content-Disposition
+        const contentDisposition = response.headers['content-disposition'] || '';
+        let fileName = '';
+        
+        // Essayer d'extraire le nom du fichier depuis le Content-Disposition
+        const fileNameMatch = contentDisposition.match(/filename\*?=['"](?:UTF-8'')?([^;\n"]*)['"]?;?/i) || 
+                             contentDisposition.match(/filename=['"]([^;\n"]*)['"]?;?/i);
+        
+        if (fileNameMatch && fileNameMatch[1]) {
+          fileName = fileNameMatch[1].trim();
+          // Nettoyer le nom de fichier si nécessaire
+          fileName = fileName.replace(/[^\w\d\.\-]/g, '_');
+        } else {
+          // Utiliser un nom de fichier par défaut si non trouvé dans le header
+          fileName = `ebook_${request._id}.${request.filePath ? request.filePath.split('.').pop() : 'pdf'}`;
+        }
+        
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        
+        // Nettoyage
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        
+        // Marquer comme téléchargé si ce n'est pas déjà fait
+        if (!request.downloadedAt) {
+          await markAsDownloaded(request._id);
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors du téléchargement du fichier:', error);
+      toast.error('Erreur lors du téléchargement du fichier');
+    } finally {
+      setIsDownloading(false);
+    }
   };
   
   // Charger les notifications non vues au montage du composant
@@ -138,7 +217,7 @@ const UserDashboard = () => {
         const prevRequest = prevRequestsRef.current.find(r => r && r._id === request._id);
         // Gestion des notifications pour les demandes terminées
         if (request.status === 'completed' && 
-            request.downloadLink && 
+            (request.downloadLink || request.filePath) && 
             !toastIdsRef.current.has(`completed-${request._id}`) &&
             !seenNotifications.has(`completed-${request._id}`) &&
             (!request.notifications?.completed?.seen)) {
@@ -158,22 +237,31 @@ const UserDashboard = () => {
           toast.success(
             <div>
               <div>Votre demande est terminée !</div>
-              <a 
-                href={request.downloadLink} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className={styles.downloadLink}
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  if (!request.downloadedAt) {
-                    await markAsDownloaded(request._id);
-                  }
-                }}
-              >
-                {request.downloadedAt 
-                  ? `Téléchargé le ${new Date(request.downloadedAt).toLocaleDateString()}` 
-                  : 'Télécharger'}
-              </a>
+              <div>
+                <a 
+                  href={request.downloadLink || '#'} 
+                  target={request.downloadLink ? "_blank" : "_self"}
+                  rel="noopener noreferrer"
+                  className={styles.downloadLink}
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    if (request.filePath) {
+                      await downloadFile(request);
+                    } else if (request.downloadLink) {
+                      if (!request.downloadedAt) {
+                        await markAsDownloaded(request._id);
+                      }
+                      window.open(request.downloadLink, '_blank');
+                    }
+                  }}
+                >
+                  {request.downloadedAt 
+                    ? `Téléchargé le ${new Date(request.downloadedAt).toLocaleDateString()}` 
+                    : 'Télécharger'}
+                </a>
+              </div>
             </div>,
             {
               toastId: toastId,
@@ -393,18 +481,52 @@ const UserDashboard = () => {
                     </div>
                   )}
                   
-                  {request.status === 'completed' && request.downloadLink && (
+                  {request.status === 'completed' && (request.downloadLink || request.filePath) && (
                     <a 
-                      href={request.downloadLink} 
+                      href="#" 
                       className={styles.primaryButton}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       onClick={async (e) => {
                         e.preventDefault();
-                        const marked = await markAsDownloaded(request._id);
-                        if (marked) {
-                          // Ouvrir le téléchargement après la mise à jour
-                          window.open(request.downloadLink, '_blank');
+                        try {
+                          const marked = await markAsDownloaded(request._id);
+                          if (marked) {
+                            if (request.filePath) {
+                              const response = await axiosAdmin.get(
+                                `/api/requests/download/${request._id}`,
+                                { responseType: 'blob' }
+                              );
+                              const url = window.URL.createObjectURL(new Blob([response.data]));
+                              const link = document.createElement('a');
+                              link.href = url;
+                              
+                              // Extraire le nom du fichier depuis le header Content-Disposition
+                              const contentDisposition = response.headers['content-disposition'] || '';
+                              let fileName = '';
+                              
+                              // Essayer d'extraire le nom du fichier depuis le Content-Disposition
+                              const fileNameMatch = contentDisposition.match(/filename\*?=['"]?(?:UTF-8'')?([^;\n"]*)['"]?;?/i) || 
+                                                 contentDisposition.match(/filename=['"]([^'"]+)['"]/i);
+                              
+                              if (fileNameMatch && fileNameMatch[1]) {
+                                // Décoder le nom de fichier encodé en URI
+                                fileName = decodeURIComponent(fileNameMatch[1].trim());
+                              } else {
+                                // Utiliser le nom du fichier depuis le chemin si disponible
+                                fileName = request.filePath ? request.filePath.split('/').pop() : 'livre.epub';
+                              }
+                              
+                              link.setAttribute('download', fileName);
+                              document.body.appendChild(link);
+                              link.click();
+                              link.remove();
+                              window.URL.revokeObjectURL(url);
+                            } else if (request.downloadLink) {
+                              window.open(request.downloadLink, '_blank');
+                            }
+                          }
+                        } catch (error) {
+                          console.error('Erreur lors du téléchargement:', error);
+                          toast.error('Erreur lors du téléchargement du fichier');
                         }
                       }}
                     >
