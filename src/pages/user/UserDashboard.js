@@ -27,7 +27,7 @@ const UserDashboard = () => {
   const prevRequestsRef = useRef([]);
   const isFirstRender = useRef(true);
   const [seenNotifications, setSeenNotifications] = useState(new Set());
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadingFile, setDownloadingFile] = useState(null); // Pour suivre quel fichier est en cours de téléchargement
 
   // Récupère les demandes de l'utilisateur connecté
   const fetchRequests = async () => {
@@ -122,20 +122,29 @@ const UserDashboard = () => {
     return false;
   };
 
-  // Télécharger un fichier
+  // Télécharger un fichier ou ouvrir un lien
   const downloadFile = async (request) => {
-    if (isDownloading) return;
+    if (downloadingFile === request._id) return;
     
-    setIsDownloading(true);
+    setDownloadingFile(request._id);
 
     try {
+      // Marquer la demande comme téléchargée
       const marked = await markAsDownloaded(request._id);
-      if (marked) {
+      if (!marked) return;
+
+      // Si c'est un lien de téléchargement externe
+      if (request.downloadLink) {
+        // Ouvrir le lien dans un nouvel onglet
+        window.open(request.downloadLink, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      // Si c'est un fichier à télécharger via l'API
+      if (request.filePath) {
         const response = await axiosAdmin.get(
           `/api/requests/download/${request._id}`,
-          {
-            responseType: 'blob'
-          }
+          { responseType: 'blob' }
         );
 
         const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -148,7 +157,7 @@ const UserDashboard = () => {
         
         // Essayer d'extraire le nom du fichier depuis le Content-Disposition
         const fileNameMatch = contentDisposition.match(/filename\*?=['"](?:UTF-8'')?([^;\n"]*)['"]?;?/i) || 
-                             contentDisposition.match(/filename=['"]([^;\n"]*)['"]?;?/i);
+                           contentDisposition.match(/filename=['"]([^;\n"]*)['"]?;?/i);
         
         if (fileNameMatch && fileNameMatch[1]) {
           fileName = fileNameMatch[1].trim();
@@ -166,17 +175,12 @@ const UserDashboard = () => {
         // Nettoyage
         link.remove();
         window.URL.revokeObjectURL(url);
-        
-        // Marquer comme téléchargé si ce n'est pas déjà fait
-        if (!request.downloadedAt) {
-          await markAsDownloaded(request._id);
-        }
       }
     } catch (error) {
       console.error('Erreur lors du téléchargement du fichier:', error);
       toast.error('Erreur lors du téléchargement du fichier');
     } finally {
-      setIsDownloading(false);
+      setDownloadingFile(null);
     }
   };
   
@@ -482,56 +486,30 @@ const UserDashboard = () => {
                   )}
                   
                   {request.status === 'completed' && (request.downloadLink || request.filePath) && (
-                    <a 
-                      href="#" 
-                      className={styles.primaryButton}
+                    <button 
+                      className={`${styles.primaryButton} ${downloadingFile === request._id ? styles.downloading : ''}`}
                       onClick={async (e) => {
                         e.preventDefault();
                         try {
-                          const marked = await markAsDownloaded(request._id);
-                          if (marked) {
-                            if (request.filePath) {
-                              const response = await axiosAdmin.get(
-                                `/api/requests/download/${request._id}`,
-                                { responseType: 'blob' }
-                              );
-                              const url = window.URL.createObjectURL(new Blob([response.data]));
-                              const link = document.createElement('a');
-                              link.href = url;
-                              
-                              // Extraire le nom du fichier depuis le header Content-Disposition
-                              const contentDisposition = response.headers['content-disposition'] || '';
-                              let fileName = '';
-                              
-                              // Essayer d'extraire le nom du fichier depuis le Content-Disposition
-                              const fileNameMatch = contentDisposition.match(/filename\*?=['"]?(?:UTF-8'')?([^;\n"]*)['"]?;?/i) || 
-                                                 contentDisposition.match(/filename=['"]([^'"]+)['"]/i);
-                              
-                              if (fileNameMatch && fileNameMatch[1]) {
-                                // Décoder le nom de fichier encodé en URI
-                                fileName = decodeURIComponent(fileNameMatch[1].trim());
-                              } else {
-                                // Utiliser le nom du fichier depuis le chemin si disponible
-                                fileName = request.filePath ? request.filePath.split('/').pop() : 'livre.epub';
-                              }
-                              
-                              link.setAttribute('download', fileName);
-                              document.body.appendChild(link);
-                              link.click();
-                              link.remove();
-                              window.URL.revokeObjectURL(url);
-                            } else if (request.downloadLink) {
-                              window.open(request.downloadLink, '_blank');
-                            }
-                          }
+                          await downloadFile(request);
                         } catch (error) {
                           console.error('Erreur lors du téléchargement:', error);
-                          toast.error('Erreur lors du téléchargement du fichier');
+                          toast.error('Une erreur est survenue lors du téléchargement');
                         }
                       }}
+                      disabled={downloadingFile === request._id}
                     >
-                      Télécharger le livre
-                    </a>
+                      {downloadingFile === request._id ? (
+                        <>
+                          <span className={styles.spinner}></span>
+                          Téléchargement...
+                        </>
+                      ) : (
+                        request.downloadedAt 
+                          ? `Téléchargé le ${new Date(request.downloadedAt).toLocaleDateString('fr-FR')}`
+                          : 'Télécharger le livre'
+                      )}
+                    </button>
                   )}
                 </div>
                 <div className={styles.requestFooter}>

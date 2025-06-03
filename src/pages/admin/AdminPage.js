@@ -484,7 +484,7 @@ function AdminPage() {
                               setFile(null);
                             }}
                           >
-                            Ajouter un lien
+                            Ajouter le fichier
                           </button>
                           <button 
                             className={`${styles.button} ${styles.secondary}`}
@@ -573,7 +573,7 @@ function AdminPage() {
                             <input
                               type="file"
                               onChange={handleFileChange}
-                              accept=".pdf,.epub,.mobi"
+                              accept=".pdf,.epub,.mobi,.azw,.azw3,.kfx,.cbz,.cbr,.cb7,.cbt,.cba,.djvu"
                               className={styles.fileInput}
                             />
                             <span className={styles.fileInputButton}>
