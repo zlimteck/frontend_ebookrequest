@@ -28,6 +28,11 @@ const UserDashboard = () => {
   const isFirstRender = useRef(true);
   const [seenNotifications, setSeenNotifications] = useState(new Set());
   const [downloadingFile, setDownloadingFile] = useState(null); // Pour suivre quel fichier est en cours de téléchargement
+  const getFileType = (filename) => {
+    if (!filename) return '';
+    const ext = filename.split('.').pop().toLowerCase();
+    return ext.toUpperCase();
+  };
 
   // Récupère les demandes de l'utilisateur connecté
   const fetchRequests = async () => {
@@ -239,16 +244,18 @@ const UserDashboard = () => {
           })();
           
           toast.success(
-            <div>
-              <div>Votre demande est terminée !</div>
-              <div>
-                <a 
-                  href={request.downloadLink || '#'} 
-                  target={request.downloadLink ? "_blank" : "_self"}
-                  rel="noopener noreferrer"
-                  className={styles.downloadLink}
+            <div 
+              className={styles.notificationContent}
+              onClick={(e) => {
+                // Empêcher la fermeture de la notification au clic
+                e.stopPropagation();
+              }}
+            >
+              <div className={styles.notificationMessage}>Votre demande est terminée !</div>
+              <div className={styles.notificationButtonContainer}>
+                <button 
+                  className={styles.notificationButton}
                   onClick={async (e) => {
-                    e.preventDefault();
                     e.stopPropagation();
                     
                     if (request.filePath) {
@@ -263,15 +270,16 @@ const UserDashboard = () => {
                 >
                   {request.downloadedAt 
                     ? `Téléchargé le ${new Date(request.downloadedAt).toLocaleDateString()}` 
-                    : 'Télécharger'}
-                </a>
+                    : `Télécharger ${request.filePath ? `(${getFileType(request.filePath)})` : ''}`}
+                </button>
               </div>
             </div>,
             {
               toastId: toastId,
               autoClose: 10000,
-              closeOnClick: true,
-              closeButton: true
+              closeOnClick: false, // Désactiver le clic sur la notification
+              closeButton: true,
+              onClick: null // Désactiver le clic sur la notification
             }
           );
         }
@@ -507,7 +515,7 @@ const UserDashboard = () => {
                       ) : (
                         request.downloadedAt 
                           ? `Téléchargé le ${new Date(request.downloadedAt).toLocaleDateString('fr-FR')}`
-                          : 'Télécharger le livre'
+                          : `Télécharger le livre ${request.filePath ? `(${getFileType(request.filePath)})` : ''}`
                       )}
                     </button>
                   )}

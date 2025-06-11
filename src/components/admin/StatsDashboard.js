@@ -241,6 +241,18 @@ const StatsDashboard = () => {
           <p className={styles.statNumber}>{stats.requests.completed}</p>
           <p className={styles.statLabel}>Requêtes complétées</p>
         </div>
+
+        <div className={styles.statCard}>
+          <h3>Annulées</h3>
+          <p className={styles.statNumber}>{stats.requests.cancelled}</p>
+          <p className={styles.statLabel}>Requêtes annulées</p>
+        </div>
+
+        <div className={styles.statCard}>
+          <h3>Signalements</h3>
+          <p className={styles.statNumber}>Coming soon</p>
+          <p className={styles.statLabel}>Problemes signalés</p>
+        </div>
       </div>
 
       <div className={styles.chartsContainer}>
