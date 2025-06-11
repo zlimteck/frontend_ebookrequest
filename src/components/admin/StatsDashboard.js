@@ -81,12 +81,16 @@ const StatsDashboard = () => {
 
   // Données pour le graphique circulaire des requêtes
   const requestsData = {
-    labels: ['En attente', 'Complétées'],
+    labels: ['En attente', 'Complétées', 'Annulées'],
     datasets: [
       {
-        data: [stats.requests.pending, stats.requests.completed],
-        backgroundColor: ['#F59E0B', '#10B981'],
-        borderColor: ['#F59E0B', '#10B981'],
+        data: [
+          stats.requests.pending, 
+          stats.requests.completed,
+          stats.requests.cancelled || 0
+        ],
+        backgroundColor: ['#F59E0B', '#10B981', '#EF4444'],
+        borderColor: ['#F59E0B', '#10B981', '#EF4444'],
         borderWidth: 1,
       },
     ],
