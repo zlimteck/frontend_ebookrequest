@@ -78,6 +78,8 @@ function UserForm() {
   const [searchMode, setSearchMode] = useState('google');
   const [selectedBook, setSelectedBook] = useState(null);
   const [existingRequests, setExistingRequests] = useState([]);
+  const [availability, setAvailability] = useState(null);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
 
   // Vérifier si l'utilisateur est connecté et charger les demandes existantes
   useEffect(() => {
@@ -198,39 +200,70 @@ function UserForm() {
     }
   };
 
+  // Fonction pour vérifier la disponibilité du livre
+  const checkAvailability = useCallback(async (title, author) => {
+    if (!title || !author) return;
+
+    setCheckingAvailability(true);
+    setAvailability(null);
+
+    try {
+      const response = await axiosAdmin.post('/api/availability/check', {
+        title,
+        author
+      });
+
+      if (response.data.success) {
+        setAvailability(response.data);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la vérification de disponibilité:', error);
+      setAvailability({
+        available: false,
+        confidence: 'unknown',
+        message: 'Impossible de vérifier la disponibilité pour le moment'
+      });
+    } finally {
+      setCheckingAvailability(false);
+    }
+  }, []);
+
   const handleBookSelect = useCallback((book) => {
     if (!book) return false;
-    
+
     // Vérifie si ce livre a déjà été demandé
     if (book.id) {
       const currentRequests = [...existingRequests];
-      
+
       const isDuplicate = currentRequests.some(req => {
-        return req.googleBooksId === book.id || 
-              (req.title === book.volumeInfo?.title && 
+        return req.googleBooksId === book.id ||
+              (req.title === book.volumeInfo?.title &&
                req.author === book.volumeInfo?.authors?.[0]);
       });
-      
+
       if (isDuplicate) {
-        setMessage({ 
-          text: 'Vous avez déjà demandé ce livre. Vérifiez vos demandes en attente.', 
-          type: 'error' 
+        setMessage({
+          text: 'Vous avez déjà demandé ce livre. Vérifiez vos demandes en attente.',
+          type: 'error'
         });
         return false;
       }
     }
-    
+
     // Si on arrive ici, c'est qu'il n'y a pas de doublon
     setSelectedBook(book);
-    
+
     // Mettre à jour le formulaire avec les informations du livre
     if (book.volumeInfo) {
       // Construire l'URL Google Books si elle n'est pas fournie
       const googleBooksLink = book.volumeInfo.infoLink || `https://books.google.fr/books?id=${book.id}`;
-      
+
+      const title = book.volumeInfo.title || '';
+      const author = book.volumeInfo.authors?.[0] || '';
+
       setForm(prev => ({
         ...prev,
-        title: book.volumeInfo.title || '',
+        title: title,
         author: book.volumeInfo.authors?.join(', ') || '',
         year: book.volumeInfo.publishedDate ? new Date(book.volumeInfo.publishedDate).getFullYear() : '',
         description: book.volumeInfo.description || '',
@@ -239,16 +272,20 @@ function UserForm() {
         coverImagePreview: book.volumeInfo.imageLinks?.thumbnail?.replace('http://', 'https://') || '',
         pages: book.volumeInfo.pageCount || ''
       }));
-      
+
+      // Vérifier la disponibilité
+      checkAvailability(title, author);
+
       // Basculer sur le formulaire manuel pour permettre les modifications
       setSearchMode('manual');
     }
-    
+
     return true;
-  }, [existingRequests]); // Dépendances nécessaires pour le callback
+  }, [existingRequests, checkAvailability]); // Dépendances nécessaires pour le callback
 
   const handleRemoveBook = () => {
     setSelectedBook(null);
+    setAvailability(null);
     setForm(prev => ({
       ...prev,
       title: '',
@@ -260,7 +297,7 @@ function UserForm() {
       coverImagePreview: '',
       file: null
     }));
-    
+
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -417,12 +454,45 @@ function UserForm() {
       ) : (
         <form onSubmit={handleSubmit} className={styles.form}>
           {selectedBook && (
-            <SelectedBookInfo 
-              book={selectedBook} 
-              onRemove={handleRemoveBook} 
+            <SelectedBookInfo
+              book={selectedBook}
+              onRemove={handleRemoveBook}
             />
           )}
-          
+
+          {/* Affichage de la disponibilité */}
+          {checkingAvailability && (
+            <div className={styles.availabilityCheck}>
+              <div className={styles.availabilitySpinner}></div>
+              <p>Vérification de la disponibilité...</p>
+            </div>
+          )}
+
+          {availability && !checkingAvailability && (
+            <div className={`${styles.availabilityStatus} ${
+              availability.confidence === 'high' ? styles.availabilityHigh :
+              availability.confidence === 'medium' ? styles.availabilityMedium :
+              availability.confidence === 'low' ? styles.availabilityLow :
+              styles.availabilityUnknown
+            }`}>
+              <div className={styles.availabilityIcon}>
+                {availability.confidence === 'high' && '✓'}
+                {availability.confidence === 'medium' && '⚡'}
+                {availability.confidence === 'low' && '⏱'}
+                {availability.confidence === 'unknown' && '?'}
+              </div>
+              <div className={styles.availabilityContent}>
+                <h4 className={styles.availabilityTitle}>
+                  {availability.confidence === 'high' && 'Disponibilité rapide'}
+                  {availability.confidence === 'medium' && 'Disponibilité probable'}
+                  {availability.confidence === 'low' && 'Traitement standard'}
+                  {availability.confidence === 'unknown' && 'Disponibilité inconnue'}
+                </h4>
+                <p className={styles.availabilityMessage}>{availability.message}</p>
+              </div>
+            </div>
+          )}
+
           <div className={styles.formGroup}>
             <label htmlFor="title" className={styles.label}>
               Titre du livre <span className={styles.required}>*</span>
