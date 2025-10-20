@@ -229,31 +229,37 @@ function AdminPage() {
         return (
           <>
             <div className={styles.filters}>
-              <button 
+              <button
                 className={`${styles.filterButton} ${filter === 'pending' ? styles.active : ''}`}
                 onClick={() => setFilter('pending')}
               >
                 En attente
               </button>
-              <button 
+              <button
                 className={`${styles.filterButton} ${filter === 'completed' ? styles.active : ''}`}
                 onClick={() => setFilter('completed')}
               >
                 Complétées
               </button>
-              <button 
+              <button
+                className={`${styles.filterButton} ${filter === 'reported' ? styles.active : ''}`}
+                onClick={() => setFilter('reported')}
+              >
+                Signalements
+              </button>
+              <button
                 className={`${styles.filterButton} ${filter === 'canceled' ? styles.active : ''}`}
                 onClick={() => setFilter('canceled')}
               >
                 Annulées
               </button>
-              <button 
+              <button
                 className={`${styles.filterButton} ${filter === 'all' ? styles.active : ''}`}
                 onClick={() => setFilter('all')}
               >
                 Toutes
               </button>
-              <button 
+              <button
                 className={styles.refreshButton}
                 onClick={fetchRequests}
                 disabled={loading}
@@ -357,18 +363,29 @@ function AdminPage() {
                         </a>
                       </div>
                     )}
-                    <div 
+                    <div
                       className={`${styles.status} ${
-                        request.status === 'completed' ? styles.completed : 
-                        request.status === 'canceled' ? styles.canceled : ''
+                        request.status === 'completed' ? styles.completed :
+                        request.status === 'canceled' ? styles.canceled :
+                        request.status === 'reported' ? styles.reported : ''
                       }`}
                     >
                       {
                         request.status === 'pending' ? 'En attente' :
                         request.status === 'completed' ? 'Complétée' :
+                        request.status === 'reported' ? 'Signalée' :
                         request.cancelReason ? `Annulée : ${request.cancelReason}` : 'Annulée'
                       }
                     </div>
+                    {request.status === 'reported' && request.reportReason && (
+                      <div className={styles.reportSection}>
+                        <div className={styles.reportLabel}>⚠️ Problème signalé :</div>
+                        <div className={styles.reportReason}>{request.reportReason}</div>
+                        <div className={styles.reportDate}>
+                          Signalé le {new Date(request.reportedAt).toLocaleDateString()} à {new Date(request.reportedAt).toLocaleTimeString()}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 
@@ -476,7 +493,7 @@ function AdminPage() {
                     <div className={styles.statusButtons}>
                       {request.status === 'pending' ? (
                         <>
-                          <button 
+                          <button
                             className={`${styles.button} ${styles.primary}`}
                             onClick={() => {
                               setEditingDownloadLink(request._id);
@@ -486,7 +503,7 @@ function AdminPage() {
                           >
                             Ajouter le fichier
                           </button>
-                          <button 
+                          <button
                             className={`${styles.button} ${styles.secondary}`}
                             onClick={() => setCancelingRequest(request._id)}
                             disabled={updatingStatus === request._id}
@@ -494,9 +511,39 @@ function AdminPage() {
                             Annuler
                           </button>
                         </>
+                      ) : request.status === 'reported' ? (
+                        <>
+                          <button
+                            className={`${styles.button} ${styles.primary}`}
+                            onClick={() => handleUpdateStatus(request._id, 'completed')}
+                            disabled={updatingStatus === request._id}
+                            title="Marquer comme résolu et remettre en statut complété"
+                          >
+                            {updatingStatus === request._id ? '...' : 'Résolu - Compléter'}
+                          </button>
+                          <button
+                            className={`${styles.button} ${styles.warning}`}
+                            onClick={() => handleUpdateStatus(request._id, 'pending')}
+                            disabled={updatingStatus === request._id}
+                            title="Remettre la demande en attente pour correction"
+                          >
+                            {updatingStatus === request._id ? '...' : 'Repasser en attente'}
+                          </button>
+                          <button
+                            className={`${styles.button} ${styles.secondary}`}
+                            onClick={() => {
+                              setEditingDownloadLink(request._id);
+                              setDownloadLink(request.downloadLink || '');
+                              setFile(null);
+                            }}
+                            title="Modifier le fichier téléchargeable"
+                          >
+                            Modifier le fichier
+                          </button>
+                        </>
                       ) : (
                         <>
-                          <button 
+                          <button
                             className={`${styles.button} ${styles.warning}`}
                             onClick={() => handleUpdateStatus(request._id, 'pending')}
                             disabled={updatingStatus === request._id}
@@ -504,7 +551,7 @@ function AdminPage() {
                             {updatingStatus === request._id ? '...' : 'En attente'}
                           </button>
                           {request.status === 'completed' && (
-                            <button 
+                            <button
                               className={`${styles.button} ${styles.secondary}`}
                               onClick={() => {
                                 setCancelingRequest(request._id);
@@ -516,7 +563,7 @@ function AdminPage() {
                             </button>
                           )}
                           {request.status === 'canceled' && (
-                            <button 
+                            <button
                               className={`${styles.button} ${styles.primary}`}
                               onClick={() => handleUpdateStatus(request._id, 'pending')}
                               disabled={updatingStatus === request._id}
@@ -526,7 +573,7 @@ function AdminPage() {
                           )}
                         </>
                       )}
-                      <button 
+                      <button
                         className={`${styles.button} ${styles.danger}`}
                         onClick={() => handleDeleteRequest(request._id)}
                         disabled={deletingRequest === request._id}

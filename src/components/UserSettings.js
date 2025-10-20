@@ -8,7 +8,7 @@ const UserSettings = () => {
     email: '',
     username: '',
     notificationPreferences: {
-      email: { enabled: false, bookCompleted: true },
+      email: { enabled: false },
       push: { enabled: true }
     }
   });
@@ -36,11 +36,10 @@ const UserSettings = () => {
             ...prev,
             ...response.data.user,
             notificationPreferences: {
-              email: { 
-                enabled: response.data.user.notificationPreferences?.email?.enabled || false,
-                bookCompleted: response.data.user.notificationPreferences?.email?.bookCompleted !== false
+              email: {
+                enabled: response.data.user.notificationPreferences?.email?.enabled || false
               },
-              push: { 
+              push: {
                 enabled: response.data.user.notificationPreferences?.push?.enabled !== false
               }
             }
@@ -282,28 +281,12 @@ const UserSettings = () => {
             <h3>Notifications par email</h3>
             <div className={styles.checkboxGroup}>
               <div className={styles.switchContainer}>
-                <label className={`${styles.switch} ${!user.notificationPreferences.email.enabled ? styles.disabled : ''}`}>
+                <label className={styles.switch}>
                   <input
                     type="checkbox"
                     name="notificationPreferences.email.enabled"
                     checked={user.notificationPreferences.email.enabled}
                     onChange={handleInputChange}
-                  />
-                  <span className={styles.slider}></span>
-                </label>
-                <span className={styles.switchLabel}>
-                  {user.notificationPreferences.email.enabled ? 'Activé' : 'Désactivé'}
-                </span>
-              </div>
-              
-              <div className={styles.switchContainer}>
-                <label className={`${styles.switch} ${!user.notificationPreferences.email.enabled ? styles.disabled : ''}`}>
-                  <input
-                    type="checkbox"
-                    name="notificationPreferences.email.bookCompleted"
-                    checked={user.notificationPreferences.email.bookCompleted}
-                    onChange={handleInputChange}
-                    disabled={!user.notificationPreferences.email.enabled}
                   />
                   <span className={styles.slider}></span>
                 </label>

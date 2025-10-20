@@ -662,6 +662,12 @@ body {
   color: #ef4444;
 }
 
+.status.reported {
+  background-color: rgba(255, 152, 0, 0.1);
+  color: #ff9800;
+  border: 1px solid rgba(255, 152, 0, 0.3);
+}
+
 .cardFooter {
   padding: 1.25rem;
   background: rgba(0, 0, 0, 0.1);
@@ -1887,3 +1893,31 @@ body {
 .requestCard:nth-child(3) { animation-delay: 0.15s; }
 .requestCard:nth-child(4) { animation-delay: 0.2s; }
 .requestCard:nth-child(5) { animation-delay: 0.25s; }
+
+.reportSection {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: rgba(255, 152, 0, 0.05);
+  border-left: 3px solid #ff9800;
+  border-radius: var(--radius);
+}
+
+.reportLabel {
+  font-weight: 600;
+  color: #ff9800;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.reportReason {
+  color: var(--color-text);
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+  word-break: break-word;
+}
+
+.reportDate {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}

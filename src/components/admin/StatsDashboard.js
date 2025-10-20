@@ -81,16 +81,17 @@ const StatsDashboard = () => {
 
   // Données pour le graphique circulaire des requêtes
   const requestsData = {
-    labels: ['En attente', 'Complétées', 'Annulées'],
+    labels: ['En attente', 'Complétées', 'Signalées', 'Annulées'],
     datasets: [
       {
         data: [
-          stats.requests.pending, 
+          stats.requests.pending,
           stats.requests.completed,
+          stats.requests.reported || 0,
           stats.requests.cancelled || 0
         ],
-        backgroundColor: ['#F59E0B', '#10B981', '#EF4444'],
-        borderColor: ['#F59E0B', '#10B981', '#EF4444'],
+        backgroundColor: ['#F59E0B', '#10B981', '#FF9800', '#EF4444'],
+        borderColor: ['#F59E0B', '#10B981', '#FF9800', '#EF4444'],
         borderWidth: 1,
       },
     ],
@@ -254,8 +255,8 @@ const StatsDashboard = () => {
 
         <div className={styles.statCard}>
           <h3>Signalements</h3>
-          <p className={styles.statNumber}>Coming soon</p>
-          <p className={styles.statLabel}>Problemes signalés</p>
+          <p className={styles.statNumber}>{stats.requests.reported || 0}</p>
+          <p className={styles.statLabel}>Problèmes signalés</p>
         </div>
       </div>
 

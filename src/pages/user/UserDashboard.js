@@ -28,6 +28,8 @@ const UserDashboard = () => {
   const isFirstRender = useRef(true);
   const [seenNotifications, setSeenNotifications] = useState(new Set());
   const [downloadingFile, setDownloadingFile] = useState(null); // Pour suivre quel fichier est en cours de téléchargement
+  const [reportModal, setReportModal] = useState({ isOpen: false, requestId: null, requestTitle: '' });
+  const [reportReason, setReportReason] = useState('');
   const getFileType = (filename) => {
     if (!filename) return '';
     const ext = filename.split('.').pop().toLowerCase();
@@ -40,12 +42,13 @@ const UserDashboard = () => {
       setLoading(true);
       const response = await axiosAdmin.get(`/api/requests/my-requests?status=${filter === 'all' ? '' : filter}`);
       
-      // Tri des demandes pour afficher : Terminées, En attente, puis Annulées
+      // Tri des demandes pour afficher : Signalées, Terminées, En attente, puis Annulées
       const sortedRequests = [...response.data].sort((a, b) => {
         const statusPriority = {
-          'completed': 1,
-          'pending': 2,
-          'canceled': 3
+          'reported': 1,
+          'completed': 2,
+          'pending': 3,
+          'canceled': 4
         };
         
         const aPriority = statusPriority[a.status] || 3;
@@ -125,6 +128,31 @@ const UserDashboard = () => {
       toast.error('Erreur lors de l\'enregistrement du téléchargement');
     }
     return false;
+  };
+
+  // Signaler un problème
+  const handleReportRequest = async () => {
+    if (!reportReason.trim()) {
+      toast.error('Veuillez indiquer la raison du signalement');
+      return;
+    }
+
+    try {
+      const response = await axiosAdmin.post(`/api/requests/${reportModal.requestId}/report`, {
+        reason: reportReason
+      });
+
+      if (response.data.success) {
+        toast.success('Signalement envoyé avec succès. Un administrateur va examiner le problème.');
+        setReportModal({ isOpen: false, requestId: null, requestTitle: '' });
+        setReportReason('');
+        // Rafraîchir les demandes
+        await fetchRequests();
+      }
+    } catch (error) {
+      console.error('Erreur lors du signalement:', error);
+      toast.error(error.response?.data?.error || 'Erreur lors du signalement');
+    }
   };
 
   // Télécharger un fichier ou ouvrir un lien
@@ -377,16 +405,22 @@ const UserDashboard = () => {
           En attente
         </button>
         <button
-          className={`${styles.filterButton} ${filter === 'canceled' ? styles.active : ''}`}
-          onClick={() => setFilter('canceled')}
-        >
-          Annulées
-        </button>
-        <button
           className={`${styles.filterButton} ${filter === 'completed' ? styles.active : ''}`}
           onClick={() => setFilter('completed')}
         >
           Terminées
+        </button>
+        <button
+          className={`${styles.filterButton} ${filter === 'reported' ? styles.active : ''}`}
+          onClick={() => setFilter('reported')}
+        >
+          Signalées
+        </button>
+        <button
+          className={`${styles.filterButton} ${filter === 'canceled' ? styles.active : ''}`}
+          onClick={() => setFilter('canceled')}
+        >
+          Annulées
         </button>
       </div>
 
@@ -440,13 +474,15 @@ const UserDashboard = () => {
                 <div className={styles.requestHeader}>
                   <h3 className={styles.requestTitle}>{request.title}</h3>
                   <span className={`${styles.statusBadge} ${
-                    request.status === 'completed' ? styles.completedBadge : 
-                    request.status === 'canceled' ? styles.canceledBadge : 
+                    request.status === 'completed' ? styles.completedBadge :
+                    request.status === 'canceled' ? styles.canceledBadge :
+                    request.status === 'reported' ? styles.reportedBadge :
                     styles.pendingBadge
                   }`}>
                     {
                       request.status === 'completed' ? 'Terminée' :
                       request.status === 'canceled' ? 'Annulée' :
+                      request.status === 'reported' ? 'Signalée' :
                       'En attente'
                     }
                   </span>
@@ -494,30 +530,50 @@ const UserDashboard = () => {
                   )}
                   
                   {request.status === 'completed' && (request.downloadLink || request.filePath) && (
-                    <button 
-                      className={`${styles.primaryButton} ${downloadingFile === request._id ? styles.downloading : ''}`}
-                      onClick={async (e) => {
-                        e.preventDefault();
-                        try {
-                          await downloadFile(request);
-                        } catch (error) {
-                          console.error('Erreur lors du téléchargement:', error);
-                          toast.error('Une erreur est survenue lors du téléchargement');
-                        }
-                      }}
-                      disabled={downloadingFile === request._id}
-                    >
-                      {downloadingFile === request._id ? (
-                        <>
-                          <span className={styles.spinner}></span>
-                          Téléchargement...
-                        </>
-                      ) : (
-                        request.downloadedAt 
-                          ? `Téléchargé le ${new Date(request.downloadedAt).toLocaleDateString('fr-FR')}`
-                          : `Télécharger le livre ${request.filePath ? `(${getFileType(request.filePath)})` : ''}`
-                      )}
-                    </button>
+                    <>
+                      <button
+                        className={`${styles.primaryButton} ${downloadingFile === request._id ? styles.downloading : ''}`}
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          try {
+                            await downloadFile(request);
+                          } catch (error) {
+                            console.error('Erreur lors du téléchargement:', error);
+                            toast.error('Une erreur est survenue lors du téléchargement');
+                          }
+                        }}
+                        disabled={downloadingFile === request._id}
+                      >
+                        {downloadingFile === request._id ? (
+                          <>
+                            <span className={styles.spinner}></span>
+                            Téléchargement...
+                          </>
+                        ) : (
+                          request.downloadedAt
+                            ? `Téléchargé le ${new Date(request.downloadedAt).toLocaleDateString('fr-FR')}`
+                            : `Télécharger le livre ${request.filePath ? `(${getFileType(request.filePath)})` : ''}`
+                        )}
+                      </button>
+                      <button
+                        className={styles.reportButton}
+                        onClick={() => setReportModal({
+                          isOpen: true,
+                          requestId: request._id,
+                          requestTitle: request.title
+                        })}
+                      >
+                        Signaler un problème
+                      </button>
+                    </>
+                  )}
+
+                  {request.status === 'reported' && request.reportReason && (
+                    <div className={styles.reportedNotice}>
+                      <span className={styles.reportedLabel}>⚠️ Problème signalé</span>
+                      <p><strong>Raison :</strong> {request.reportReason}</p>
+                      <small>Un administrateur examine votre signalement</small>
+                    </div>
                   )}
                 </div>
                 <div className={styles.requestFooter}>
@@ -546,6 +602,48 @@ const UserDashboard = () => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Modal de signalement */}
+      {reportModal.isOpen && (
+        <div className={styles.modalOverlay} onClick={() => {
+          setReportModal({ isOpen: false, requestId: null, requestTitle: '' });
+          setReportReason('');
+        }}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <h2>Signaler un problème</h2>
+            <p className={styles.modalBookTitle}>Livre: {reportModal.requestTitle}</p>
+            <div className={styles.modalForm}>
+              <label htmlFor="reportReason">Veuillez décrire le problème rencontré:</label>
+              <textarea
+                id="reportReason"
+                value={reportReason}
+                onChange={(e) => setReportReason(e.target.value)}
+                placeholder="Ex: Le fichier est corrompu, mauvais format, contenu incomplet, etc."
+                rows="5"
+                className={styles.modalTextarea}
+              />
+            </div>
+            <div className={styles.modalButtons}>
+              <button
+                className={styles.modalCancelButton}
+                onClick={() => {
+                  setReportModal({ isOpen: false, requestId: null, requestTitle: '' });
+                  setReportReason('');
+                }}
+              >
+                Annuler
+              </button>
+              <button
+                className={styles.modalSubmitButton}
+                onClick={handleReportRequest}
+                disabled={!reportReason.trim()}
+              >
+                Envoyer le signalement
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
