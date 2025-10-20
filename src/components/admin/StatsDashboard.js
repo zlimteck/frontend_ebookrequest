@@ -90,8 +90,8 @@ const StatsDashboard = () => {
           stats.requests.reported || 0,
           stats.requests.cancelled || 0
         ],
-        backgroundColor: ['#F59E0B', '#10B981', '#FF9800', '#EF4444'],
-        borderColor: ['#F59E0B', '#10B981', '#FF9800', '#EF4444'],
+        backgroundColor: ['#F59E0B', '#10B981', '#9C27B0', '#EF4444'],
+        borderColor: ['#F59E0B', '#10B981', '#9C27B0', '#EF4444'],
         borderWidth: 1,
       },
     ],

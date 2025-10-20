@@ -663,9 +663,9 @@ body {
 }
 
 .status.reported {
-  background-color: rgba(255, 152, 0, 0.1);
-  color: #ff9800;
-  border: 1px solid rgba(255, 152, 0, 0.3);
+  background-color: rgba(156, 39, 176, 0.1);
+  color: #9C27B0;
+  border: 1px solid rgba(156, 39, 176, 0.3);
 }
 
 .cardFooter {
@@ -1897,14 +1897,14 @@ body {
 .reportSection {
   margin-top: 1rem;
   padding: 1rem;
-  background-color: rgba(255, 152, 0, 0.05);
-  border-left: 3px solid #ff9800;
+  background-color: rgba(156, 39, 176, 0.05);
+  border-left: 3px solid #9C27B0;
   border-radius: var(--radius);
 }
 
 .reportLabel {
   font-weight: 600;
-  color: #ff9800;
+  color: #9C27B0;
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
 }

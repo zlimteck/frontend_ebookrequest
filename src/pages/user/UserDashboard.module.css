@@ -561,8 +561,8 @@
 }
 /* Badge pour statut signalé */
 .reportedBadge {
-  background-color: rgba(255, 152, 0, 0.1);
-  color: #ff9800;
+  background-color: rgba(156, 39, 176, 0.1);
+  color: #9C27B0;
 }
 
 /* Bouton signaler un problème */
@@ -574,9 +574,9 @@
   text-align: center;
   transition: all 0.2s;
   cursor: pointer;
-  border: 1px solid #ff9800;
-  background: rgba(255, 152, 0, 0.1);
-  color: #ff9800;
+  border: 1px solid #9C27B0;
+  background: rgba(156, 39, 176, 0.1);
+  color: #9C27B0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -584,7 +584,7 @@
 }
 
 .reportButton:hover {
-  background: #ff9800;
+  background: #9C27B0;
   color: white;
   transform: translateY(-1px);
 }
@@ -592,8 +592,8 @@
 /* Notice pour demande signalée */
 .reportedNotice {
   padding: 1rem;
-  background-color: rgba(255, 152, 0, 0.1);
-  border-left: 3px solid #ff9800;
+  background-color: rgba(156, 39, 176, 0.1);
+  border-left: 3px solid #9C27B0;
   border-radius: var(--radius);
   margin-top: 1rem;
 }
@@ -715,12 +715,12 @@
 }
 
 .modalSubmitButton {
-  background: #ff9800;
+  background: #9C27B0;
   color: white;
 }
 
 .modalSubmitButton:hover:not(:disabled) {
-  background: #f57c00;
+  background: #7B1FA2;
   transform: translateY(-1px);
 }
 
