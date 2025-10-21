@@ -5,6 +5,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import UserForm from './pages/user/UserForm';
 import AdminPage from './pages/admin/AdminPage';
 import UserDashboard from './pages/user/UserDashboard';
+import DiscoverPage from './pages/user/DiscoverPage';
 import Login from './pages/auth/Login';
 import VerifyEmail from './pages/auth/VerifyEmail';
 import UserSettings from './components/UserSettings';
@@ -126,30 +127,37 @@ function App() {
       <nav className={styles.navbar}>
         <div className={styles.navContainer}>
           <div className={styles.navLinks}>
-            <Link 
-              to="/dashboard" 
+            <Link
+              to="/dashboard"
               className={`${styles.navlink} ${location.pathname === '/dashboard' ? styles.active : ''}`}
               aria-current={location.pathname === '/dashboard' ? 'page' : undefined}
             >
               Mes demandes
             </Link>
-            <Link 
-              to="/" 
+            <Link
+              to="/"
               className={`${styles.navlink} ${location.pathname === '/' ? styles.active : ''}`}
               aria-current={location.pathname === '/' ? 'page' : undefined}
             >
               Nouvelle demande
             </Link>
-            <Link 
-              to="/settings" 
+            <Link
+              to="/discover"
+              className={`${styles.navlink} ${location.pathname === '/discover' ? styles.active : ''}`}
+              aria-current={location.pathname === '/discover' ? 'page' : undefined}
+            >
+              Découvrir
+            </Link>
+            <Link
+              to="/settings"
               className={`${styles.navlink} ${location.pathname === '/settings' ? styles.active : ''}`}
               aria-current={location.pathname === '/settings' ? 'page' : undefined}
             >
               Paramètres
             </Link>
             {isAdmin && (
-              <Link 
-                to="/admin" 
+              <Link
+                to="/admin"
                 className={`${styles.navlink} ${location.pathname.startsWith('/admin') ? styles.active : ''}`}
                 aria-current={location.pathname.startsWith('/admin') ? 'page' : undefined}
               >
@@ -197,17 +205,25 @@ function App() {
             <Navigate to="/login" state={{ from: '/dashboard' }} replace />
           } 
         />
-        <Route 
-          path="/settings" 
+        <Route
+          path="/settings"
           element={
             token ?
             <UserSettings /> :
             <Navigate to="/login" state={{ from: '/settings' }} replace />
-          } 
+          }
         />
-        <Route 
-          path="/verify-email/:token" 
-          element={<VerifyEmail />} 
+        <Route
+          path="/discover"
+          element={
+            token ?
+            <DiscoverPage /> :
+            <Navigate to="/login" state={{ from: '/discover' }} replace />
+          }
+        />
+        <Route
+          path="/verify-email/:token"
+          element={<VerifyEmail />}
         />
         <Route path="/" element={token ? <UserForm /> : <Navigate to="/login" replace />} />
         {/* Redirection pour les routes inconnues */}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axiosAdmin from '../../axiosAdmin';
 import GoogleBooksSearch from '../../components/GoogleBooksSearch';
 import { compressImage, isImage } from '../../utils/imageCompressor';
@@ -61,6 +61,7 @@ const SelectedBookInfo = ({ book, onRemove }) => {
 
 function UserForm() {
   const navigate = useNavigate();
+  const location = useLocation();
   const fileInputRef = useRef(null);
   const [form, setForm] = useState({ 
     author: '', 
@@ -81,6 +82,34 @@ function UserForm() {
   const [availability, setAvailability] = useState(null);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
 
+  // Fonction pour vérifier la disponibilité du livre
+  const checkAvailability = useCallback(async (title, author) => {
+    if (!title || !author) return;
+
+    setCheckingAvailability(true);
+    setAvailability(null);
+
+    try {
+      const response = await axiosAdmin.post('/api/availability/check', {
+        title,
+        author
+      });
+
+      if (response.data.success) {
+        setAvailability(response.data);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la vérification de disponibilité:', error);
+      setAvailability({
+        available: false,
+        confidence: 'unknown',
+        message: 'Impossible de vérifier la disponibilité pour le moment'
+      });
+    } finally {
+      setCheckingAvailability(false);
+    }
+  }, []);
+
   // Vérifier si l'utilisateur est connecté et charger les demandes existantes
   useEffect(() => {
     let isMounted = true;
@@ -94,17 +123,37 @@ function UserForm() {
         if (isMounted) {
           setIsAuthenticated(true);
           await fetchExistingRequests();
+
+          // Vérifier s'il y a des données pré-remplies depuis la page Découvrir
+          if (location.state?.prefillData) {
+            const prefill = location.state.prefillData;
+            setForm(prev => ({
+              ...prev,
+              title: prefill.title || '',
+              author: prefill.author || '',
+              link: prefill.link || '',
+              description: prefill.description || '',
+              coverImagePreview: prefill.thumbnail || '',
+              pages: prefill.pageCount || ''
+            }));
+            setSearchMode('manual');
+
+            // Vérifier la disponibilité si on a un titre et un auteur
+            if (prefill.title && prefill.author) {
+              checkAvailability(prefill.title, prefill.author);
+            }
+          }
         }
       }
     };
-    
+
     init();
-    
+
     return () => {
       isMounted = false;
       setMessage({ text: '', type: '' });
     };
-  }, [navigate]);
+  }, [navigate, location.state, checkAvailability]);
   
   // Fonction pour charger les demandes existantes de l'utilisateur
   const fetchExistingRequests = async () => {
@@ -199,34 +248,6 @@ function UserForm() {
       }));
     }
   };
-
-  // Fonction pour vérifier la disponibilité du livre
-  const checkAvailability = useCallback(async (title, author) => {
-    if (!title || !author) return;
-
-    setCheckingAvailability(true);
-    setAvailability(null);
-
-    try {
-      const response = await axiosAdmin.post('/api/availability/check', {
-        title,
-        author
-      });
-
-      if (response.data.success) {
-        setAvailability(response.data);
-      }
-    } catch (error) {
-      console.error('Erreur lors de la vérification de disponibilité:', error);
-      setAvailability({
-        available: false,
-        confidence: 'unknown',
-        message: 'Impossible de vérifier la disponibilité pour le moment'
-      });
-    } finally {
-      setCheckingAvailability(false);
-    }
-  }, []);
 
   const handleBookSelect = useCallback((book) => {
     if (!book) return false;

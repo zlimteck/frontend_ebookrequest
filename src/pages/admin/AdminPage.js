@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import PushoverConfig from '../../components/admin/PushoverConfig';
 import UserManagement from '../../components/admin/UserManagement';
 import StatsDashboard from '../../components/admin/StatsDashboard';
+import BestsellerManagement from '../../components/admin/BestsellerManagement';
 
 const TrashIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -224,6 +225,8 @@ function AdminPage() {
         return <PushoverConfig />;
       case 'users':
         return <UserManagement />;
+      case 'bestsellers':
+        return <BestsellerManagement />;
       case 'requests':
       default:
         return (
@@ -705,25 +708,31 @@ function AdminPage() {
         <h1>Panneau d'administration</h1>
       </div>
       <div className={styles.tabs}>
-        <button 
+        <button
           className={`${styles.tabButton} ${activeTab === 'requests' ? styles.activeTab : ''}`}
           onClick={() => setActiveTab('requests')}
         >
           Demandes
         </button>
-        <button 
+        <button
           className={`${styles.tabButton} ${activeTab === 'users' ? styles.activeTab : ''}`}
           onClick={() => setActiveTab('users')}
         >
           Utilisateurs
         </button>
-        <button 
+        <button
+          className={`${styles.tabButton} ${activeTab === 'bestsellers' ? styles.activeTab : ''}`}
+          onClick={() => setActiveTab('bestsellers')}
+        >
+          Bestsellers
+        </button>
+        <button
           className={`${styles.tabButton} ${activeTab === 'stats' ? styles.activeTab : ''}`}
           onClick={() => setActiveTab('stats')}
         >
           Statistiques
         </button>
-        <button 
+        <button
           className={`${styles.tabButton} ${activeTab === 'pushover' ? styles.activeTab : ''}`}
           onClick={() => setActiveTab('pushover')}
         >

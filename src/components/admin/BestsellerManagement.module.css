@@ -1,0 +1,311 @@
+:root {
+  --color-bg: #0f172a;
+  --color-bg2: #1e293b;
+  --color-bg3: #334155;
+  --color-text: #f8fafc;
+  --color-text-muted: #94a3b8;
+  --color-accent: #6366f1;
+  --color-accent-hover: #4f46e5;
+  --color-danger: #ef4444;
+  --color-danger-hover: #dc2626;
+  --color-border: #2d3748;
+  --radius: 0.5rem;
+  --radius-lg: 0.75rem;
+  --shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --glass: rgba(30, 41, 59, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+.container {
+  padding: 0;
+  width: 100%;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.addButton {
+  background: var(--color-accent);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.addButton:hover {
+  background: var(--color-accent-hover);
+  transform: translateY(-2px);
+}
+
+.categoryTabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.categoryTab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.categoryTab:hover {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: white;
+}
+
+.categoryTab.active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: white;
+}
+
+.categoryIcon {
+  font-size: 18px;
+}
+
+.formCard {
+  background: var(--color-bg3);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 20px;
+  border: 1px solid var(--color-border);
+}
+
+.formCard h3 {
+  margin: 0 0 20px 0;
+  color: var(--color-text);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.input, .select {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg2);
+  color: var(--color-text);
+  font-size: 0.95rem;
+  transition: var(--transition);
+}
+
+.input:focus, .select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.formButtons {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.saveButton {
+  background: var(--color-accent);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.saveButton:hover {
+  background: var(--color-accent-hover);
+  transform: translateY(-1px);
+}
+
+.cancelButton {
+  background: var(--color-bg3);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.cancelButton:hover {
+  background: var(--color-bg2);
+}
+
+.bestsellersList {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.loading, .empty {
+  text-align: center;
+  padding: 40px;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+}
+
+.bestsellerCard {
+  background: var(--color-bg3);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  border: 1px solid var(--color-border);
+  transition: var(--transition);
+}
+
+.bestsellerCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.bestsellerInfo {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  margin-bottom: 15px;
+}
+
+.rank {
+  background: var(--color-accent);
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.bookDetails {
+  flex: 1;
+}
+
+.title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 5px;
+}
+
+.author {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  margin-bottom: 10px;
+}
+
+.meta {
+  display: flex;
+  gap: 15px;
+  font-size: 0.875rem;
+}
+
+.category {
+  color: var(--color-accent);
+  font-weight: 500;
+}
+
+.order {
+  color: var(--color-text-muted);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.editButton, .deleteButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  background: var(--color-bg2);
+}
+
+.editButton {
+  color: var(--color-text);
+}
+
+.editButton:hover {
+  border-color: var(--color-accent);
+  background: var(--color-bg3);
+}
+
+.deleteButton {
+  color: var(--color-danger);
+}
+
+.deleteButton:hover {
+  border-color: var(--color-danger);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .categoryTabs {
+    flex-wrap: wrap;
+  }
+
+  .bestsellerInfo {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .editButton, .deleteButton {
+    width: 100%;
+    justify-content: center;
+  }
+}
