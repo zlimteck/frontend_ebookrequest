@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axiosAdmin from '../../axiosAdmin';
 import GoogleBooksSearch from '../../components/GoogleBooksSearch';
+import BookRecommendations from '../../components/BookRecommendations';
 import { compressImage, isImage } from '../../utils/imageCompressor';
 import styles from './UserForm.module.css';
 
@@ -432,7 +433,7 @@ function UserForm() {
       <div className={styles.logoContainer}>
         <img src="/img/logo.png" alt="Logo" className={styles.logo} />
       </div>
-      
+
       <h1 className={styles.formTitle}>Demander un livre</h1>
       
       {message.text && (
@@ -464,9 +465,9 @@ function UserForm() {
       {searchMode === 'google' ? (
         <div className={styles.googleSearchContainer}>
           {selectedBook ? (
-            <SelectedBookInfo 
-              book={selectedBook} 
-              onRemove={handleRemoveBook} 
+            <SelectedBookInfo
+              book={selectedBook}
+              onRemove={handleRemoveBook}
             />
           ) : (
             <GoogleBooksSearch onSelectBook={handleBookSelect} />
@@ -659,6 +660,8 @@ function UserForm() {
           {message.text}
         </div>
       )}
+
+      <BookRecommendations onSelectBook={handleBookSelect} />
     </div>
   );
 }
