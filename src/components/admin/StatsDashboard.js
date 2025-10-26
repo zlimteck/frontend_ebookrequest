@@ -258,6 +258,60 @@ const StatsDashboard = () => {
           <p className={styles.statNumber}>{stats.requests.reported || 0}</p>
           <p className={styles.statLabel}>Problèmes signalés</p>
         </div>
+
+        <div className={styles.statCard}>
+          <h3>Statut Ollama</h3>
+          <div className={styles.ollamaStatus}>
+            <div className={styles.statusIndicator}>
+              <span
+                className={`${styles.statusDot} ${stats.ollama?.connected ? styles.connected : styles.disconnected}`}
+              ></span>
+              <span className={styles.statusText}>
+                {stats.ollama?.connected ? 'Connecté' : 'Déconnecté'}
+              </span>
+            </div>
+            {stats.ollama?.connected && (
+              <>
+                <p className={styles.ollamaModel}>
+                  <strong>Modèle :</strong> {stats.ollama.model}
+                </p>
+                {stats.ollama.modelAvailable && (
+                  <p className={styles.modelStatus}>✓ Modèle disponible</p>
+                )}
+                {!stats.ollama.modelAvailable && (
+                  <p className={styles.modelStatusWarning}>⚠ Modèle non disponible</p>
+                )}
+              </>
+            )}
+            {stats.ollama?.error && (
+              <p className={styles.ollamaError}>{stats.ollama.error}</p>
+            )}
+          </div>
+        </div>
+
+        <div className={styles.statCard}>
+          <h3>Requêtes IA</h3>
+          <p className={styles.statNumber}>{stats.aiRequests?.total || 0}</p>
+          <p className={styles.statLabel}>Total des requêtes</p>
+        </div>
+
+        <div className={styles.statCard}>
+          <h3>Taux de succès IA</h3>
+          <p className={styles.statNumber}>{stats.aiRequests?.successRate || 0}%</p>
+          <p className={styles.statLabel}>
+            {stats.aiRequests?.successful || 0} réussies / {stats.aiRequests?.failed || 0} échouées
+          </p>
+        </div>
+
+        <div className={styles.statCard}>
+          <h3>Temps moyen</h3>
+          <p className={styles.statNumber}>
+            {stats.aiRequests?.avgResponseTime
+              ? `${(stats.aiRequests.avgResponseTime / 1000).toFixed(1)}s`
+              : '0s'}
+          </p>
+          <p className={styles.statLabel}>Temps de réponse IA</p>
+        </div>
       </div>
 
       <div className={styles.chartsContainer}>

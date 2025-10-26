@@ -329,12 +329,100 @@
   .statsGrid {
     grid-template-columns: 1fr;
   }
-  
+
   .statCard {
     padding: 1rem;
   }
-  
+
   .statNumber {
     font-size: 1.75rem;
   }
+}
+
+/* Styles pour la carte Ollama */
+.ollamaStatus {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.statusIndicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.statusDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.statusDot.connected {
+  background-color: #10B981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+
+.statusDot.disconnected {
+  background-color: #EF4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+  animation: none;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.statusText {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.ollamaModel {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin: 0.25rem 0;
+  text-align: center;
+}
+
+.ollamaModel strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.modelStatus {
+  font-size: 0.875rem;
+  color: #10B981;
+  margin: 0.25rem 0;
+  font-weight: 500;
+}
+
+.modelStatusWarning {
+  font-size: 0.875rem;
+  color: #F59E0B;
+  margin: 0.25rem 0;
+  font-weight: 500;
+}
+
+.ollamaError {
+  font-size: 0.75rem;
+  color: var(--color-danger);
+  margin: 0.5rem 0 0 0;
+  padding: 0.5rem;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: var(--radius-sm);
+  text-align: center;
+  max-width: 100%;
+  word-break: break-word;
 }
